@@ -1,0 +1,104 @@
+/*
+ * Seqan library test code for reading fasta files.
+ *
+ * Try to implement a regex on names and sequences. Maybe there's a way
+ * to do a special DNA or protein regex?
+ *
+ * blgrep
+ *  --length: length constraints
+ *  --gc: GC constraints
+ *  --name: regex on sequence ids
+ *  --string:  regex on sequence, treated as regular string
+ *  --dna:  regex on sequence, treated as DNA
+ *  --rna:  regex on sequence, treated as RNA
+ *  --aa:   regex on sequence, treated as Amino Acid
+ *
+ *  -v, --invert: Invert the search
+ *  -i, --ignore-case: for use with regular regex and maybe with biology
+ *                     regex
+ *  -b, --biological: Some sort of specialized biological regex
+ *
+ * 
+ * What would be different about biological regex?
+ *  - allow gaps?
+ *  - IUPAC ambiguities?
+ *  - percent match?
+ *  - complement, translation, reverse-complement?
+ *  - doing an alignment instead of just pattern matching?
+ *  
+ *  Some of these things are basically blast - which is pretty
+ *  complicated and already implemented by NCBI.
+ *
+ *  The basic string regex should be pretty easy to do.
+ *
+ *  For approximate matching, use one of the approximate matching
+ *  algorithms, and a custom scoring function.
+ *
+ */
+
+#include <iostream>
+#include <regex>
+
+#include <seqan/find.h>
+#include <seqan/seq_io.h>
+
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::regex;
+
+using namespace seqan;
+
+struct params {
+    bool name_search = false;
+    bool string_search = false;
+    bool dna_search = false;
+    bool aa_search = false;
+    bool rna_search = false;
+    bool invert = false;
+    bool ignore_case = false;
+
+    char * infile;
+    char * s_string;
+    char * s_dna;
+    char * s_aa;
+    char * s_rna;
+};
+
+int main(int argc, char * argv[]) {
+
+    char * infile = argv[1];
+
+    // Make Finder<CharString>
+    // and Pattern<CharString, ..finding algorithm..>
+    // I don't know if this will do what I have in mind, but maybe.
+
+    CharString id;
+    CharString seq;              // CharString more flexible than Dna5String
+    SeqFileIn seq_handle(infile);
+    char * id_string;
+
+    if(!open(seq_handle, infile)) {
+        cerr << "Could not open " << infile << endl;
+        return 1;
+    }
+
+    while(!atEnd(seq_handle)) {
+
+        try {
+
+            readRecord(id, seq, seq_handle);
+            id_string = toCString(id);
+
+        } catch (Exception const &e) {
+
+            cout << "Error: " << e.what() << endl;
+            return 1;
+
+        } // End try-catch for record reading.
+
+        cout << id << " : " << length(seq) << endl;
+
+    } // End file reading loop
+
+}
