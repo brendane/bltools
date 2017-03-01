@@ -73,6 +73,7 @@ int main(int argc, char * argv[]) {
   }
   
   bool matched = false;
+  int nmatched = 0;
   while(!atEnd(seq_handle)) {
 
     try {
@@ -90,6 +91,7 @@ int main(int argc, char * argv[]) {
       
       // Write out if matched
       if((matched && !inverted) || (!matched && inverted)) {
+	nmatched++;
 	cout << ">" << id << endl << seq << endl;
       }
 
@@ -101,5 +103,11 @@ int main(int argc, char * argv[]) {
     } // End try-catch for record reading.
 
   } // End file reading loop
+  
+  if(nmatched) {
+    return 0;
+  } else {
+    return 1;
+  }
 
 }
