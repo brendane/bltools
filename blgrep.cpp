@@ -41,32 +41,32 @@ using std::vector;
 using namespace seqan;
 
 int main(int argc, char * argv[]) {
- 
+
   /*
    * Command line arguments.
    */
   TCLAP::CmdLine cmd("Program to regex search sequence files", ' ', "0.0");
   TCLAP::SwitchArg seq_regex_arg("S", "sequence-regex",
-				 "use regex for sequences instead of name; sets -i",
-				 cmd);
+                                 "use regex for sequences instead of name; sets -i",
+                                 cmd);
   TCLAP::SwitchArg invert_regex_arg("v", "invert-match",
-				    "Invert matching, like grep -v", cmd);
+                                    "Invert matching, like grep -v", cmd);
   TCLAP::SwitchArg ignore_case_arg("i", "ignore-case",
-				   "Ignore case in pattern and input", cmd);
+                                   "Ignore case in pattern and input", cmd);
   TCLAP::SwitchArg case_sensitive_arg("I", "case-sensitive",
-				      "Do not ignore case in pattern and input; only for -S",
-				      cmd);
+                                      "Do not ignore case in pattern and input; only for -S",
+                                      cmd);
   TCLAP::ValueArg<string> match_type_arg("M", "match-type",
-					 "Match type: f=fwd, r=rev, c=compl., R=revcomp; ignored for names",
-					 false, "f", "string", cmd);
+                                         "Match type: f=fwd, r=rev, c=compl., R=revcomp; ignored for names",
+                                         false, "f", "string", cmd);
   TCLAP::ValueArg<int> frame_arg("F", "frame",
-				 "Frame for translation: 0=fwd frame, 1=fwd + revcomp, 2=all 3 fwd, 3=all 6",
-				 false, 0, "string", cmd);
+                                 "Frame for translation: 0=fwd frame, 1=fwd + revcomp, 2=all 3 fwd, 3=all 6",
+                                 false, 0, "string", cmd);
   TCLAP::UnlabeledValueArg<string> regex_string_arg("PATTERN", "regex pattern",
-						    true, "",
-						    "regex", cmd, false);
+                                                    true, "",
+                                                    "regex", cmd, false);
   TCLAP::UnlabeledMultiArg<string> infile_name("FILE(s)", "input file(s) use '-' for stdin or leave blank",
-					       false, "file name(s)", cmd, false);
+                                               false, "file name(s)", cmd, false);
   cmd.parse(argc, argv);
   vector<string> infiles = infile_name.getValue();
   if(infiles.size() == 0) infiles.push_back("-"); // stdin
@@ -74,7 +74,7 @@ int main(int argc, char * argv[]) {
   bool inverted = invert_regex_arg.getValue();
   string match_type = match_type_arg.getValue();
   int frame = frame_arg.getValue();
- 
+
   // Regex setup
   std::regex_constants::syntax_option_type regex_flags =
     regex::extended | regex::optimize;
@@ -105,137 +105,137 @@ int main(int argc, char * argv[]) {
     tframe = SINGLE_FRAME;
     break;
   }
-  
+
   CharString id;
   CharString seq;              // CharString more flexible than Dna5String
   CharString qual;
   SeqFileIn seq_handle;
-  
+
   // Loop over input files
   int nmatched = 0;
   for(string& infile: infiles) {
 
     if(infile == "-") {
       if(!open(seq_handle, std::cin)) {
-	cerr << "Could not read file from stdin" << endl;
-	return 1;
+        cerr << "Could not read file from stdin" << endl;
+        return 1;
       }
     } else {
       if(!open(seq_handle, infile.c_str())) {
-	cerr << "Could not open " << infile << endl;
-	return 1;
+        cerr << "Could not open " << infile << endl;
+        return 1;
       }
     }
-  
+
     bool matched = false;
     while(!atEnd(seq_handle)) {
 
       try {
 
-	readRecord(id, seq, qual, seq_handle);
-	
-	// Regex
-	if(seq_regex) {
+        readRecord(id, seq, qual, seq_handle);
 
-	  if(regex_search(match_type, regex("a"))) {
-	    match_type = "frcR";
-	  }
-	  if(regex_search(match_type, regex("A"))) {
-	    match_type = "frcRt";
-	  }
+        // Regex
+        if(seq_regex) {
 
-	  // Due to some quirks of Seqan, I have to do a number of format
-	  // conversions, so this isn't as elegant as I would like.
-	  // Also this assumes DNA, not RNA, even though RNA could work
-	  // fine. Note that any type of sequence will work with regular
-	  // forward matching.
-	  matched = false;
-	  for(char& c: match_type) {
-	    switch (c) {
-	    case 'f':
-	      {
-		CharString _seq = seq;
-		matched |= regex_search(toCString(_seq), regex_pattern,
-					regex_match_flags);
-		break;
-	      }
-	    case 'r':
-	      {
-		ModifiedString<CharString, ModReverse> rseq(seq);
-		CharString _seq(rseq);
-		matched |= regex_search(toCString(_seq), regex_pattern,
-					regex_match_flags);
-		break;
-	      }
-	    case 'c':
-	      {
-		Dna5String dseq(seq);
-		complement(dseq);
-		CharString _seq(dseq);
-		matched |= regex_search(toCString(_seq), regex_pattern,
-					regex_match_flags);
-		break;
-	      }
-	    case 'R':
-	      {
-		Dna5String dseq(seq);
-		reverseComplement(dseq);
-		CharString _seq(dseq);
-		matched |= regex_search(toCString(_seq), regex_pattern,
-					regex_match_flags);
-		break;
-	      }
-	    case 't':
-	      {
-		// template<typename T> trans_search(seq, pattern) ... 
-		// use with <Dna5String> for DNA or <Rna5String>...
-		StringSet< String<AminoAcid> > aseqs;
-		Dna5String dseq(seq);
-		translate(aseqs, dseq, tframe);
-		// Loop over translation frames
-		for(String<AminoAcid>& _aseq: aseqs) {
-		  CharString _seq(_aseq);
-		  matched |= regex_search(toCString(_seq), regex_pattern,
-					  regex_match_flags);
-		} // End loop over translation frames
-		break;
-	      }
+          if(regex_search(match_type, regex("a"))) {
+            match_type = "frcR";
+          }
+          if(regex_search(match_type, regex("A"))) {
+            match_type = "frcRt";
+          }
 
-	    } // End switch statement
+          // Due to some quirks of Seqan, I have to do a number of format
+          // conversions, so this isn't as elegant as I would like.
+          // Also this assumes DNA, not RNA, even though RNA could work
+          // fine. Note that any type of sequence will work with regular
+          // forward matching.
+          matched = false;
+          for(char& c: match_type) {
+            switch (c) {
+            case 'f':
+              {
+                CharString _seq = seq;
+                matched |= regex_search(toCString(_seq), regex_pattern,
+                                        regex_match_flags);
+                break;
+              }
+            case 'r':
+              {
+                ModifiedString<CharString, ModReverse> rseq(seq);
+                CharString _seq(rseq);
+                matched |= regex_search(toCString(_seq), regex_pattern,
+                                        regex_match_flags);
+                break;
+              }
+            case 'c':
+              {
+                Dna5String dseq(seq);
+                complement(dseq);
+                CharString _seq(dseq);
+                matched |= regex_search(toCString(_seq), regex_pattern,
+                                        regex_match_flags);
+                break;
+              }
+            case 'R':
+              {
+                Dna5String dseq(seq);
+                reverseComplement(dseq);
+                CharString _seq(dseq);
+                matched |= regex_search(toCString(_seq), regex_pattern,
+                                        regex_match_flags);
+                break;
+              }
+            case 't':
+              {
+                // template<typename T> trans_search(seq, pattern) ... 
+                // use with <Dna5String> for DNA or <Rna5String>...
+                StringSet< String<AminoAcid> > aseqs;
+                Dna5String dseq(seq);
+                translate(aseqs, dseq, tframe);
+                // Loop over translation frames
+                for(String<AminoAcid>& _aseq: aseqs) {
+                  CharString _seq(_aseq);
+                  matched |= regex_search(toCString(_seq), regex_pattern,
+                                          regex_match_flags);
+                } // End loop over translation frames
+                break;
+              }
 
-	  } // End match_type loop
+            } // End switch statement
 
-	} else {
-	  
-	  // Simple regex on sequence IDs
-	  matched = regex_search(toCString(id), regex_pattern,
-				 regex_match_flags);
+          } // End match_type loop
 
-	} // End regex
-      
-	// Write out if matched
-	if((matched && !inverted) || (!matched && inverted)) {
-	  nmatched++;
-	  cout << ">" << id << endl << seq << endl;
-	}
+        } else {
+
+          // Simple regex on sequence IDs
+          matched = regex_search(toCString(id), regex_pattern,
+                                 regex_match_flags);
+
+        } // End regex
+
+        // Write out if matched
+        if((matched && !inverted) || (!matched && inverted)) {
+          nmatched++;
+          cout << ">" << id << endl << seq << endl;
+        }
 
       } catch (Exception const &e) {
 
-	cout << "Error: " << e.what() << endl;
-	return 1;
+        cout << "Error: " << e.what() << endl;
+        return 1;
 
       } // End try-catch for record reading.
 
     } // End single file reading loop
-    
+
     close(seq_handle);
 
   } // End loop over files
-  
+
   if(nmatched) {
     return 0;
   } else {
     return 1;
   }
-  
+
 }
