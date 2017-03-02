@@ -201,7 +201,8 @@ int main(int argc, char * argv[]) {
 		break;
 	      }
 
-	    }
+	    } // End switch statement
+
 	  } // End match_type loop
 
 	} else {
@@ -209,6 +210,7 @@ int main(int argc, char * argv[]) {
 	  // Simple regex on sequence IDs
 	  matched = regex_search(toCString(id), regex_pattern,
 				 regex_match_flags);
+
 	} // End regex
       
 	// Write out if matched
