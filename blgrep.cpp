@@ -6,6 +6,11 @@
  * TODO:
  *    - Output format based on input format
  *    - Handle input formats with quality scores
+ *    - Ability to search within a range of sequence coordinates
+ *    - Ability to spit out context around matches or the number of matches
+ *    - Ability to split a fasta file into records using a GFF file -
+ *      or maybe that should be a different tool?
+ *    - Translate, complement, reverse complement
  *
  */
 
@@ -60,22 +65,29 @@ int main(int argc, char * argv[]) {
   vector<string> infiles = infile_name.getValue();
   bool seq_regex = seq_regex_arg.getValue();
   bool inverted = invert_regex_arg.getValue();
-  bool case_sensitive = case_sensitive_arg.getValue();
-  if(ignore_case_arg.getValue() || (seq_regex && !case_sensitive))
+  if(ignore_case_arg.getValue() || (seq_regex && !case_sensitive_arg.getValue()))
     regex_flags |= regex::icase;
   regex regex_pattern(regex_string_arg.getValue(), regex_flags);
   
   CharString id;
   CharString seq;              // CharString more flexible than Dna5String
+  CharString qual;
   SeqFileIn seq_handle;
   
   // Loop over input files
   int nmatched = 0;
   for(string infile: infiles) {
 
-    if(!open(seq_handle, infile.c_str())) {
-      cerr << "Could not open " << infile << endl;
-      return 1;
+    if(infile == "-") {
+      if(!open(seq_handle, std::cin)) {
+	cerr << "Could not read file from stdin" << endl;
+	return 1;
+      }
+    } else {
+      if(!open(seq_handle, infile.c_str())) {
+	cerr << "Could not open " << infile << endl;
+	return 1;
+      }
     }
   
     bool matched = false;
@@ -83,7 +95,7 @@ int main(int argc, char * argv[]) {
 
       try {
 
-	readRecord(id, seq, seq_handle);
+	readRecord(id, seq, qual, seq_handle);
       
 	// Regex
 	if(seq_regex) {
@@ -108,6 +120,7 @@ int main(int argc, char * argv[]) {
       } // End try-catch for record reading.
 
     } // End single file reading loop
+    
     close(seq_handle);
 
   } // End loop over files
