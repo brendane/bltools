@@ -45,7 +45,7 @@ int main(int argc, char * argv[]) {
   /*
    * Command line arguments.
    */
-  TCLAP::CmdLine cmd("Program to search fasta file", ' ', "0.0");
+  TCLAP::CmdLine cmd("Program to regex search sequence files", ' ', "0.0");
   TCLAP::SwitchArg seq_regex_arg("S", "sequence-regex",
 				 "use regex for sequences instead of name; sets -i",
 				 cmd);
@@ -59,10 +59,11 @@ int main(int argc, char * argv[]) {
   TCLAP::UnlabeledValueArg<string> regex_string_arg("PATTERN", "regex pattern",
 						    true, "",
 						    "regex", cmd, false);
-  TCLAP::UnlabeledMultiArg<string> infile_name("FILE(s)", "input file(s)", true,
-					       "file name(s)", cmd, false);
+  TCLAP::UnlabeledMultiArg<string> infile_name("FILE(s)", "input file(s) use '-' for stdin or leave blank",
+					       false, "file name(s)", cmd, false);
   cmd.parse(argc, argv);
   vector<string> infiles = infile_name.getValue();
+  if(infiles.size() == 0) infiles.push_back("-");
   bool seq_regex = seq_regex_arg.getValue();
   bool inverted = invert_regex_arg.getValue();
   if(ignore_case_arg.getValue() || (seq_regex && !case_sensitive_arg.getValue()))
