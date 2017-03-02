@@ -113,7 +113,7 @@ int main(int argc, char * argv[]) {
   
   // Loop over input files
   int nmatched = 0;
-  for(string infile: infiles) {
+  for(string& infile: infiles) {
 
     if(infile == "-") {
       if(!open(seq_handle, std::cin)) {
@@ -150,7 +150,7 @@ int main(int argc, char * argv[]) {
 	  // fine. Note that any type of sequence will work with regular
 	  // forward matching.
 	  matched = false;
-	  for(char c: match_type) {
+	  for(char& c: match_type) {
 	    switch (c) {
 	    case 'f':
 	      {
@@ -187,11 +187,13 @@ int main(int argc, char * argv[]) {
 	      }
 	    case 't':
 	      {
+		// template<typename T> trans_search(seq, pattern) ... 
+		// use with <Dna5String> for DNA or <Rna5String>...
 		StringSet< String<AminoAcid> > aseqs;
 		Dna5String dseq(seq);
 		translate(aseqs, dseq, tframe);
 		// Loop over translation frames
-		for(String<AminoAcid> _aseq: aseqs) {
+		for(String<AminoAcid>& _aseq: aseqs) {
 		  CharString _seq(_aseq);
 		  matched |= regex_search(toCString(_seq), regex_pattern,
 					  regex_match_flags);
