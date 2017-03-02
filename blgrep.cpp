@@ -12,8 +12,11 @@
  *    - Ability to spit out context around matches or the number of matches
  *    - Ability to split a fasta file into records using a GFF file -
  *      or maybe that should be a different tool?
- *    - Translate search
- *    - Biologically-based search instead of regex
+ *    - Biologically-based search instead of regex; I think if I make a
+ *      bl_search function that either takes the same arguments as
+ *      regex_search or runs a biological pattern matching search, I
+ *      could make it work. If it is a template, I might be able to do
+ *      something about the problem of treating all sequences as Dna.
  *
  */
 
@@ -22,8 +25,8 @@
 #include <string>
 #include <vector>
 
-#include <seqan/find.h>
 #include <seqan/seq_io.h>
+#include <seqan/translation.h>
 
 #include <tclap/CmdLine.h>
 
@@ -38,13 +41,7 @@ using std::vector;
 using namespace seqan;
 
 int main(int argc, char * argv[]) {
-  
-  // Regex flags
-  std::regex_constants::syntax_option_type regex_flags =
-    regex::extended | regex::optimize;
-  std::regex_constants::match_flag_type regex_match_flags =
-    std::regex_constants::match_any | std::regex_constants::match_not_null;
-  
+ 
   /*
    * Command line arguments.
    */
@@ -60,8 +57,11 @@ int main(int argc, char * argv[]) {
 				      "Do not ignore case in pattern and input; only for -S",
 				      cmd);
   TCLAP::ValueArg<string> match_type_arg("M", "match-type",
-				     "Match type: f=fwd, r=rev, c=compl., R=revcomp; ignored for names",
-				     false, "f", "string", cmd);
+					 "Match type: f=fwd, r=rev, c=compl., R=revcomp; ignored for names",
+					 false, "f", "string", cmd);
+  TCLAP::ValueArg<int> frame_arg("F", "frame",
+				 "Frame for translation: 0=fwd frame, 1=fwd + revcomp, 2=all 3 fwd, 3=all 6",
+				 false, 0, "string", cmd);
   TCLAP::UnlabeledValueArg<string> regex_string_arg("PATTERN", "regex pattern",
 						    true, "",
 						    "regex", cmd, false);
@@ -69,13 +69,42 @@ int main(int argc, char * argv[]) {
 					       false, "file name(s)", cmd, false);
   cmd.parse(argc, argv);
   vector<string> infiles = infile_name.getValue();
-  if(infiles.size() == 0) infiles.push_back("-");
+  if(infiles.size() == 0) infiles.push_back("-"); // stdin
   bool seq_regex = seq_regex_arg.getValue();
   bool inverted = invert_regex_arg.getValue();
   string match_type = match_type_arg.getValue();
-  if(ignore_case_arg.getValue() || (seq_regex && !case_sensitive_arg.getValue()))
+  int frame = frame_arg.getValue();
+ 
+  // Regex setup
+  std::regex_constants::syntax_option_type regex_flags =
+    regex::extended | regex::optimize;
+  std::regex_constants::match_flag_type regex_match_flags =
+    std::regex_constants::match_any | std::regex_constants::match_not_null;
+  if(ignore_case_arg.getValue() ||
+     (seq_regex && !case_sensitive_arg.getValue())) {
     regex_flags |= regex::icase;
+  }
   regex regex_pattern(regex_string_arg.getValue(), regex_flags);
+
+  // Translation frame setup
+  TranslationFrames tframe;
+  switch(frame) {
+  case 0:
+    tframe = SINGLE_FRAME;
+    break;
+  case 1:
+    tframe = WITH_REVERSE_COMPLEMENT;
+    break;
+  case 2:
+    tframe = WITH_FRAME_SHIFTS;
+    break;
+  case 3:
+    tframe = SIX_FRAME;
+    break;
+  default:
+    tframe = SINGLE_FRAME;
+    break;
+  }
   
   CharString id;
   CharString seq;              // CharString more flexible than Dna5String
@@ -110,6 +139,9 @@ int main(int argc, char * argv[]) {
 
 	  if(regex_search(match_type, regex("a"))) {
 	    match_type = "frcR";
+	  }
+	  if(regex_search(match_type, regex("A"))) {
+	    match_type = "frcRt";
 	  }
 
 	  // Due to some quirks of Seqan, I have to do a number of format
@@ -153,11 +185,26 @@ int main(int argc, char * argv[]) {
 					regex_match_flags);
 		break;
 	      }
+	    case 't':
+	      {
+		StringSet< String<AminoAcid> > aseqs;
+		Dna5String dseq(seq);
+		translate(aseqs, dseq, tframe);
+		// Loop over translation frames
+		for(String<AminoAcid> _aseq: aseqs) {
+		  CharString _seq(_aseq);
+		  matched |= regex_search(toCString(_seq), regex_pattern,
+					  regex_match_flags);
+		} // End loop over translation frames
+		break;
+	      }
+
 	    }
 	  } // End match_type loop
 
 	} else {
 	  
+	  // Simple regex on sequence IDs
 	  matched = regex_search(toCString(id), regex_pattern,
 				 regex_match_flags);
 	} // End regex
