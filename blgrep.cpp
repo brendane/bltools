@@ -152,99 +152,6 @@ int main(int argc, char * argv[]) {
       try {
 
         readRecord(id, seq, qual, seq_handle.sqh);
-
-        // Regex
-        if(seq_regex) {
-
-          if(regex_search(match_type, regex("a"))) {
-            match_type = "frcR";
-          }
-          if(regex_search(match_type, regex("A"))) {
-            match_type = "frcRt";
-          }
-
-          // Due to some quirks of Seqan, I have to do a number of format
-          // conversions, so this isn't as elegant as I would like.
-          // Also this assumes DNA, not RNA, even though RNA could work
-          // fine. Note that any type of sequence will work with regular
-          // forward matching.
-          matched = false;
-          for(char& c: match_type) {
-            switch (c) {
-            case 'f':
-              {
-                CharString _seq = seq;
-                matched |= regex_search(toCString(_seq), regex_pattern,
-                                        regex_match_flags);
-                break;
-              }
-            case 'r':
-              {
-                ModifiedString<CharString, ModReverse> rseq(seq);
-                CharString _seq(rseq);
-                matched |= regex_search(toCString(_seq), regex_pattern,
-                                        regex_match_flags);
-                break;
-              }
-            case 'c':
-              {
-                Dna5String dseq(seq);
-                complement(dseq);
-                CharString _seq(dseq);
-                matched |= regex_search(toCString(_seq), regex_pattern,
-                                        regex_match_flags);
-                break;
-              }
-            case 'R':
-              {
-                Dna5String dseq(seq);
-                reverseComplement(dseq);
-                CharString _seq(dseq);
-                matched |= regex_search(toCString(_seq), regex_pattern,
-                                        regex_match_flags);
-                break;
-              }
-            case 't':
-              {
-                // template<typename T> trans_search(seq, pattern) ... 
-                // use with <Dna5String> for DNA or <Rna5String>...
-                StringSet< String<AminoAcid> > aseqs;
-                Dna5String dseq(seq);
-                translate(aseqs, dseq, tframe);
-                // Loop over translation frames
-                for(String<AminoAcid>& _aseq: aseqs) {
-                  CharString _seq(_aseq);
-                  matched |= regex_search(toCString(_seq), regex_pattern,
-                                          regex_match_flags);
-                } // End loop over translation frames
-                break;
-              }
-
-            } // End switch statement
-
-          } // End match_type loop
-
-        } else {
-
-          // Simple regex on sequence IDs
-          matched = regex_search(toCString(id), regex_pattern,
-                                 regex_match_flags);
-
-        } // End regex
-
-        // Write out if matched
-        if((matched && !inverted) || (!matched && inverted)) {
-          nmatched++;
-          try {
-              writeRecord(out_handle, id, seq, qual);
-          } catch (Exception const &e) {
-              cerr << "Error: " << e.what() << endl;
-              cerr << "Error writing output" << endl;
-              seq_handle.close();
-              return 1;
-          }
-        }
-
       } catch (Exception const &e) {
 
         cerr << "Error: " << e.what() << endl;
@@ -254,6 +161,100 @@ int main(int argc, char * argv[]) {
 
       } // End try-catch for record reading.
 
+
+      // Regex
+       if(seq_regex) {
+
+         if(regex_search(match_type, regex("a"))) {
+           match_type = "frcR";
+         }
+         if(regex_search(match_type, regex("A"))) {
+           match_type = "frcRt";
+         }
+
+         // Due to some quirks of Seqan, I have to do a number of format
+         // conversions, so this isn't as elegant as I would like.
+         // Also this assumes DNA, not RNA, even though RNA could work
+         // fine. Note that any type of sequence will work with regular
+         // forward matching.
+         matched = false;
+         for(char& c: match_type) {
+           switch (c) {
+           case 'f':
+             {
+               CharString _seq = seq;
+               matched |= regex_search(toCString(_seq), regex_pattern,
+                                       regex_match_flags);
+               break;
+             }
+           case 'r':
+             {
+               ModifiedString<CharString, ModReverse> rseq(seq);
+               CharString _seq(rseq);
+               matched |= regex_search(toCString(_seq), regex_pattern,
+                                       regex_match_flags);
+               break;
+             }
+           case 'c':
+             {
+               Dna5String dseq(seq);
+               complement(dseq);
+               CharString _seq(dseq);
+               matched |= regex_search(toCString(_seq), regex_pattern,
+                                       regex_match_flags);
+               break;
+             }
+            case 'R':
+             {
+               Dna5String dseq(seq);
+               reverseComplement(dseq);
+               CharString _seq(dseq);
+               matched |= regex_search(toCString(_seq), regex_pattern,
+                                       regex_match_flags);
+               break;
+             }
+           case 't':
+             {
+               // template<typename T> trans_search(seq, pattern) ... 
+               // use with <Dna5String> for DNA or <Rna5String>...
+               StringSet< String<AminoAcid> > aseqs;
+               Dna5String dseq(seq);
+               translate(aseqs, dseq, tframe);
+               // Loop over translation frames
+               for(String<AminoAcid>& _aseq: aseqs) {
+                 CharString _seq(_aseq);
+                 matched |= regex_search(toCString(_seq), regex_pattern,
+                                        regex_match_flags);
+              } // End loop over translation frames
+              break;
+            }
+
+          } // End switch statement
+
+        } // End match_type loop
+
+      } else {
+
+        // Simple regex on sequence IDs
+        matched = regex_search(toCString(id), regex_pattern,
+                               regex_match_flags);
+
+      } // End regex
+
+      // Write out if matched
+      if((matched && !inverted) || (!matched && inverted)) {
+        nmatched++;
+        try {
+            writeRecord(out_handle, id, seq, qual);
+        } catch (Exception const &e) {
+            cerr << "Error: " << e.what() << endl;
+            cerr << "Error writing output" << endl;
+            seq_handle.close();
+            return 1;
+        }
+      } // End write out if matched
+
+      
     } // End single file reading loop
 
     
