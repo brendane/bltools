@@ -8,6 +8,10 @@
  *
  * TODO:
  *    - Output format based on input format, or at least some choices
+ *    - Trick from blhead for forcing SeqAn to not use the file extension
+ *      to guess at input sequence format.
+ *    - Checks for input file issues, and make sure file handles are
+ *      closed in all error conditions.
  *    - Ability to search within a range of sequence coordinates
  *    - Ability to spit out context around matches or the number of matches
  *    - Ability to split a fasta file into records using a GFF file -
@@ -30,6 +34,8 @@
 
 #include <tclap/CmdLine.h>
 
+#include <SeqFileInWrapper.h>
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -39,6 +45,7 @@ using std::string;
 using std::vector;
 
 using namespace seqan;
+using namespace bltools;
 
 int main(int argc, char * argv[]) {
 
@@ -109,30 +116,27 @@ int main(int argc, char * argv[]) {
   CharString id;
   CharString seq;              // CharString more flexible than Dna5String
   CharString qual;
-  SeqFileIn seq_handle;
+  SeqFileInWrapper seq_handle;
 
   // Loop over input files
   int nmatched = 0;
   for(string& infile: infiles) {
 
-    if(infile == "-") {
-      if(!open(seq_handle, std::cin)) {
-        cerr << "Could not read file from stdin" << endl;
-        return 1;
-      }
-    } else {
-      if(!open(seq_handle, infile.c_str())) {
-        cerr << "Could not open " << infile << endl;
-        return 1;
-      }
-    }
 
+    try {
+        seq_handle.open(infile);
+    } catch(Exception const &e) {
+      cerr << "Could not open " << infile << endl;
+      seq_handle.close();
+      return 1;
+    }
+ 
     bool matched = false;
-    while(!atEnd(seq_handle)) {
+    while(!seq_handle.atEnd()) {
 
       try {
 
-        readRecord(id, seq, qual, seq_handle);
+        readRecord(id, seq, qual, seq_handle.sqh);
 
         // Regex
         if(seq_regex) {
@@ -222,13 +226,17 @@ int main(int argc, char * argv[]) {
       } catch (Exception const &e) {
 
         cout << "Error: " << e.what() << endl;
+        seq_handle.close();
         return 1;
 
       } // End try-catch for record reading.
 
     } // End single file reading loop
 
-    close(seq_handle);
+    
+    if(!seq_handle.close()) {
+        cerr << "Problem closing " << infile << endl;
+    }
 
   } // End loop over files
 
