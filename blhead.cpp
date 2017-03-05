@@ -30,7 +30,7 @@ using namespace bltools;
 int main(int argc, char * argv[]) {
   
   TCLAP::CmdLine cmd("Equivalent of `head' for sequence files", ' ', "0.0");
-  TCLAP::ValueArg<string> format_arg("f", "format",
+  TCLAP::ValueArg<string> format_arg("o", "output-format",
                                      "Output format: fasta or fastq; fasta is default",
                                      false, "fasta", "fast[aq]", cmd);
   TCLAP::ValueArg<int> nlines_arg("n", "lines",
@@ -49,7 +49,6 @@ int main(int argc, char * argv[]) {
   }
   
   SeqFileOut out_handle(cout, Fasta());
-  //open(out_handle, cout);
   if(format == "fasta") {
     setFormat(out_handle, Fasta());
   } else if(format == "fastq") {
@@ -91,6 +90,7 @@ int main(int argc, char * argv[]) {
 
         cout << "Error: " << e.what() << endl;
         seq_handle.close();
+        close(out_handle);
         return 1;
 
       } // End try-catch for record reading.
@@ -120,6 +120,8 @@ int main(int argc, char * argv[]) {
 
     if(!seq_handle.close()) {
         cerr << "Problem closing " << infile << endl;
+        close(out_handle);
+        return 1;
     }
 
   } // End loop over files
