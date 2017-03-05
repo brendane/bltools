@@ -69,6 +69,9 @@ int main(int argc, char * argv[]) {
   TCLAP::ValueArg<int> frame_arg("F", "frame",
                                  "Frame for translation: 0=fwd frame, 1=fwd + revcomp, 2=all 3 fwd, 3=all 6",
                                  false, 0, "string", cmd);
+  TCLAP::ValueArg<string> format_arg("o", "output-format",
+                                     "Output format: fasta or fastq; fasta is default",
+                                     false, "fasta", "fast[aq]", cmd);
   TCLAP::UnlabeledValueArg<string> regex_string_arg("PATTERN", "regex pattern",
                                                     true, "",
                                                     "regex", cmd, false);
@@ -81,6 +84,7 @@ int main(int argc, char * argv[]) {
   bool inverted = invert_regex_arg.getValue();
   string match_type = match_type_arg.getValue();
   int frame = frame_arg.getValue();
+  string format = format_arg.getValue();
 
   // Regex setup
   std::regex_constants::syntax_option_type regex_flags =
@@ -113,6 +117,18 @@ int main(int argc, char * argv[]) {
     break;
   }
 
+  // Output file setup
+  SeqFileOut out_handle(cout, Fasta());
+  if(format == "fasta") {
+    setFormat(out_handle, Fasta());
+  } else if(format == "fastq") {
+    setFormat(out_handle, Fastq());
+  } else {
+    cerr << "Unrecognized output format";
+    return 1;
+  }
+
+  // Loop variables
   CharString id;
   CharString seq;              // CharString more flexible than Dna5String
   CharString qual;
@@ -121,7 +137,6 @@ int main(int argc, char * argv[]) {
   // Loop over input files
   int nmatched = 0;
   for(string& infile: infiles) {
-
 
     try {
         seq_handle.open(infile);
@@ -220,13 +235,21 @@ int main(int argc, char * argv[]) {
         // Write out if matched
         if((matched && !inverted) || (!matched && inverted)) {
           nmatched++;
-          cout << ">" << id << endl << seq << endl;
+          try {
+              writeRecord(out_handle, id, seq, qual);
+          } catch (Exception const &e) {
+              cerr << "Error: " << e.what() << endl;
+              cerr << "Error writing output" << endl;
+              seq_handle.close();
+              return 1;
+          }
         }
 
       } catch (Exception const &e) {
 
-        cout << "Error: " << e.what() << endl;
+        cerr << "Error: " << e.what() << endl;
         seq_handle.close();
+        close(out_handle);
         return 1;
 
       } // End try-catch for record reading.
@@ -234,11 +257,16 @@ int main(int argc, char * argv[]) {
     } // End single file reading loop
 
     
+    // Close the input handle and check for errors
     if(!seq_handle.close()) {
         cerr << "Problem closing " << infile << endl;
+        close(out_handle);
+        return 1;
     }
 
   } // End loop over files
+
+  close(out_handle);
 
   if(nmatched) {
     return 0;
