@@ -1,6 +1,12 @@
 bltools: Unix style tools for biological sequences
 ======================================================
 
+I've often wanted to be able to use "grep" to search a FASTA file, but
+the standard Unix text-manipulation tools are line-based rather than
+sequence-record-based. The goal of this software is to create a set of
+tools that perform the same functions as head, tail, grep, sort, etc.,
+but are aware of the structure of sequence files.
+
 blgrep: Grep for biological sequences
 --------------------------------------
 
