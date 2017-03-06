@@ -8,6 +8,9 @@ DEPS = SeqFileInWrapper.h
 blhead: blhead.o SeqFileInWrapper.o
 	$(CXX) $(CXXFLAGS) -o blhead blhead.o SeqFileInWrapper.o
 
+bltail: bltail.o SeqFileInWrapper.o
+	$(CXX) $(CXXFLAGS) -o bltail bltail.o SeqFileInWrapper.o
+
 blgrep: blgrep.o SeqFileInWrapper.o
 	$(CXX) $(CXXFLAGS) -o blgrep blgrep.cpp SeqFileInWrapper.o
 

@@ -1,4 +1,6 @@
 blgrep
-deps
+blhead
+bltail
 *~
 .*
+*.o
