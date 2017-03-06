@@ -9,7 +9,9 @@ searches on biological sequences. It is meant to act very much like
 grep, except that it works on sequence records instead of lines in a
 file.
 
-blhead
-----------
+blhead and bltail
+-------------------
 
-Very much like head, but for sequences.
+Very much like head and tail, but for sequences. Note that there has to
+be a space between `-n' and the value, unlike the real tail and head
+commands.
