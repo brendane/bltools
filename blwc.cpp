@@ -30,17 +30,28 @@ using namespace bltools;
 int main(int argc, char * argv[]) {
   
   TCLAP::CmdLine cmd("Equivalent of `wc' for sequence files", ' ', "0.0");
+  TCLAP::SwitchArg rec_count_arg("m", "length",
+                                 "Give the length of each record", cmd);
+  TCLAP::SwitchArg gc_arg("g", "gc",
+                          "Give the GC proportion (of file or of each record with -m",
+                          cmd);
   TCLAP::UnlabeledMultiArg<string> files("FILE(s)", "filenames", false,
                                          "file name(s)", cmd, false);
   cmd.parse(argc, argv);
+  bool rec_count = rec_count_arg.getValue();
+  bool gc = gc_arg.getValue();
   vector<string> infiles = files.getValue();
   if(infiles.size() == 0) infiles.push_back("-");
 
   CharString id;
   CharString seq;              // CharString more flexible than Dna5String
   SeqFileInWrapper seq_handle;
+  unsigned base_count = 0;
+  unsigned gc_count = 0;
 
   for(string& infile: infiles) {
+    base_count = 0;
+    gc_count = 0;
 
     try {
         seq_handle.open(infile);
@@ -66,6 +77,28 @@ int main(int argc, char * argv[]) {
         return 1;
 
       } // End try-catch for record reading.
+      
+      if(gc || rec_count) {
+        for(char& b: seq) {
+          base_count += 1;
+          if(gc) {
+            if(b == 'G' || b == 'C' || b == 'g' || b == 'c') {
+                gc_count += 1;
+            }
+          }
+        }
+      }
+      
+      if(rec_count) {
+        if(gc) {
+          cout << infile << "\t" << id << "\t" << ((double)gc_count) / (base_count) << endl;
+        } else {
+          cout << infile << "\t" << id << "\t" << base_count << endl;
+        }
+        gc_count = 0;
+        base_count = 0;
+      } // End rec_count output
+
     } // End single file reading loop
 
     if(!seq_handle.close()) {
@@ -73,7 +106,13 @@ int main(int argc, char * argv[]) {
         return 1;
     }
 
-    cout << infile << "\t" << nrecs_read << endl;
+    if(!rec_count) {
+      if(gc) {
+        cout << infile << "\t" << ((double)gc_count) / (base_count) << endl;
+      } else {
+        cout << infile << "\t" << nrecs_read << endl;
+      }
+    }
 
   } // End loop over files
 

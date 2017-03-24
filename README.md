@@ -21,3 +21,9 @@ blhead and bltail
 Very much like head and tail, but for sequences. Note that there has to
 be a space between `-n' and the value, unlike the real tail and head
 commands.
+
+blwc
+-----
+
+Counts the number of records in a file (by default), or the length
+of each record.
