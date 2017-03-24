@@ -71,7 +71,7 @@ int main(int argc, char * argv[]) {
                                  "Frame for translation: 0=fwd frame, 1=fwd + revcomp, 2=all 3 fwd, 3=all 6",
                                  false, 0, "string", cmd);
   TCLAP::ValueArg<string> format_arg("o", "output-format",
-                                     "Output format: fasta or fastq; fasta is default",
+                                     "Output format: fasta or fastq; fasta is default; will not print fastq if there aren't quality strings",
                                      false, "fasta", "fast[aq]", cmd);
   TCLAP::UnlabeledValueArg<string> regex_string_arg("PATTERN", "regex pattern",
                                                     true, "",

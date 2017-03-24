@@ -35,9 +35,12 @@ int main(int argc, char * argv[]) {
   TCLAP::SwitchArg gc_arg("g", "gc",
                           "Give the GC proportion (of file or of each record with -m",
                           cmd);
+  TCLAP::SwitchArg include_gap_arg("i", "include-gap",
+                                 "Include gaps ('-') in the base count", cmd);
   TCLAP::UnlabeledMultiArg<string> files("FILE(s)", "filenames", false,
                                          "file name(s)", cmd, false);
   cmd.parse(argc, argv);
+  bool include_gaps = include_gap_arg.getValue();
   bool rec_count = rec_count_arg.getValue();
   bool gc = gc_arg.getValue();
   vector<string> infiles = files.getValue();
@@ -79,11 +82,15 @@ int main(int argc, char * argv[]) {
       } // End try-catch for record reading.
       
       if(gc || rec_count) {
+        // TODO Use the size() or length() or w/e function to get the base_count
+        // unless you want to avoid counting gaps
         for(char& b: seq) {
-          base_count += 1;
-          if(gc) {
-            if(b == 'G' || b == 'C' || b == 'g' || b == 'c') {
-                gc_count += 1;
+          if(include_gaps || b != '-') {
+              base_count += 1;
+            if(gc) {
+              if(b == 'G' || b == 'C' || b == 'g' || b == 'c') {
+                  gc_count += 1;
+              }
             }
           }
         }
