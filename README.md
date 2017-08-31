@@ -27,3 +27,8 @@ blwc
 
 Counts the number of records in a file (by default), or the length
 of each record.
+
+bljoin
+------
+
+Join matching records from different files into a single record.
