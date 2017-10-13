@@ -17,6 +17,9 @@ bltail: bltail.o SeqFileInWrapper.o
 blgrep: blgrep.o SeqFileInWrapper.o
 	$(CXX) $(CXXFLAGS) -o blgrep blgrep.cpp SeqFileInWrapper.o
 
+bljoin: bljoin.o SeqFileInWrapper.o
+	$(CXX) $(CXXFLAGS) -o bljoin bljoin.cpp SeqFileInWrapper.o
+
 .PHONY: clean
 
 clean:
