@@ -33,7 +33,7 @@ int main(int argc, char * argv[]) {
   TCLAP::SwitchArg rec_count_arg("m", "length",
                                  "Give the length of each record", cmd);
   TCLAP::SwitchArg gc_arg("g", "gc",
-                          "Give the GC proportion (of file or of each record with -m",
+                          "Give the GC proportion (of file or of each record with -m)",
                           cmd);
   TCLAP::SwitchArg include_gap_arg("i", "include-gap",
                                  "Include gaps ('-') in the base count", cmd);
