@@ -39,6 +39,31 @@ using std::vector;
 using namespace seqan;
 using namespace bltools;
 
+vector<string> split(string s, string delim) {
+    vector<string> ret;
+    string buffer = "";
+    bool delim_already_seen = false;
+    string current_token = "";
+    for(const char& c: s) {
+        for(const char& d: delim) {
+            if(c == d) {
+                if(!delim_already_seen) {
+                    ret.push_back(current_token);
+                    current_token = "";
+                }
+                delim_already_seen = true;
+            } else {
+                delim_already_seen = false;
+                current_token += c;
+            }
+        }
+    }
+    if(!delim_already_seen) {
+        ret.push_back(current_token);
+    }
+    return ret;
+}
+
 int main(int argc, char * argv[]) {
   
   TCLAP::CmdLine cmd("Equivalent of `join' for sequence files", ' ', "0.0");
@@ -47,9 +72,12 @@ int main(int argc, char * argv[]) {
                               cmd);
   TCLAP::SwitchArg ignore_case_arg("i", "ignore-case",
                                    "Ignore case when matching", cmd);
-  TCLAP::ValueArg<int> field_arg("f", "field",
+  TCLAP::ValueArg<unsigned> field_arg("f", "field",
                                  "Field (1-based) of ID to join on (after splitting); will ignore sequences for which the field is empty; default is to use whole ID",
                                  false, 0, "int", cmd);
+  TCLAP::ValueArg<string> pad_char_arg("p", "pad-char",
+                                     "Character to use for padding",
+                                     false, "-", "char", cmd);
   TCLAP::ValueArg<string> delim_arg("d", "delim",
                                  "Field separator", false, " ", "int", cmd);
   TCLAP::UnlabeledMultiArg<string> files("FILE(s)", "filenames", false,
@@ -57,8 +85,9 @@ int main(int argc, char * argv[]) {
   cmd.parse(argc, argv);
   bool ignore_case = ignore_case_arg.getValue();
   bool no_pad = no_pad_arg.getValue();
-  int field = field_arg.getValue();
+  unsigned field = field_arg.getValue();
   string delim = delim_arg.getValue();
+  string pad_char = pad_char_arg.getValue();
   vector<string> infiles = files.getValue();
   if(infiles.size() == 0) infiles.push_back("-");
 
@@ -112,27 +141,23 @@ int main(int argc, char * argv[]) {
       // Simple method: just use the whole sequence ID to join
       string join_id = string(toCString(id));
 
-      // Fancier: use parts of the ID (Needs conversion to C++)
-      /*
+      // Fancier: use parts of the ID
       if(ignore_case) {
         // Convert to upper case
-        // TODO: This needs to be converted to C++ - toupper won't work
-        join_id = toupper(join_id)
+        for(unsigned jii = 0; jii < join_id.size(); jii++) {
+            join_id.at(jii) = toupper(join_id.at(jii));
+        }
       }
-      */
-      /*
       if(field > 0) {
-        // TODO: this also needs to be converted to C++
-        vector<string> splitted = join_id.split(delim);
-        if(splitted.size() < (field - 1)) {
+        vector<string> splitted = split(join_id, delim);
+        if(splitted.size() < field) {
           // If the field is not found in this record, skip it
           continue;
         }
-        join_id = splitted[field];
+        join_id = splitted[field-1];
       }
-      */
 
-      // TODO: Test if id is in map, and add if not
+      // Test if id is in map, and add if not
       // Also add enough sequence to fill in missed sequences
       map<string, string>::iterator it = seqs.find(join_id);
       if(it != seqs.end()) {
@@ -141,7 +166,7 @@ int main(int argc, char * argv[]) {
         if(total_bases > 0 && !no_pad) {
           seqs[join_id].reserve(total_bases + seq_size * 2);
           for(unsigned long j = 0; j < total_bases; j++) {
-            seqs[join_id] += "-";
+            seqs[join_id] += pad_char;
           }
         } else {
           seqs[join_id] = "";
@@ -159,7 +184,7 @@ int main(int argc, char * argv[]) {
       for(map<string, string>::iterator it = seqs.begin(); it != seqs.end(); it++) {
         if(it->second.length() < total_bases) {
           for(unsigned long j = it->second.length(); j < total_bases; j++) {
-            it->second += "-";
+            it->second += pad_char;
           }
         }
       }
