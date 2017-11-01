@@ -2,6 +2,7 @@ blwc
 blgrep
 blhead
 bltail
+bljoin
 *~
 .*
 *.o

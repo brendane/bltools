@@ -165,10 +165,6 @@ int main(int argc, char * argv[]) {
       }
     }
 
-    // TODO: check if a sequence was missed and fill in with gaps
-    // Will also need to keep track of sequence size from previous
-    // file; use first sequence
-
     if(!seq_handle.close()) {
         cerr << "Problem closing " << infile << endl;
         return 1;
@@ -177,7 +173,6 @@ int main(int argc, char * argv[]) {
   } // End loop over files
   
   // Write the output in fasta format
-  // TODO: How to iterate over a std::map?
   for(pair<string, string> item: seqs) {
     cout << ">" << item.first << endl;
     cout << item.second << endl;
