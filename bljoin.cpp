@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,7 @@ using std::ifstream;
 using std::istream;
 using std::map;
 using std::pair;
+using std::set;
 using std::string;
 using std::vector;
 
@@ -70,6 +72,8 @@ int main(int argc, char * argv[]) {
   TCLAP::SwitchArg no_pad_arg("n", "no-pad",
                               "Do not attempt to pad sequences to the same length",
                               cmd);
+  TCLAP::SwitchArg allow_dups_arg("D", "allow-duplicates",
+                                  "Allow duplicate names within a file", cmd);
   TCLAP::SwitchArg ignore_case_arg("i", "ignore-case",
                                    "Ignore case when matching", cmd);
   TCLAP::ValueArg<unsigned> field_arg("f", "field",
@@ -80,14 +84,19 @@ int main(int argc, char * argv[]) {
                                      false, "-", "char", cmd);
   TCLAP::ValueArg<string> delim_arg("d", "delim",
                                  "Field separator", false, " ", "int", cmd);
+  TCLAP::ValueArg<string> separator_arg("s", "separator",
+                                        "Separator between joined sequences",
+                                        false, "", "string", cmd);
   TCLAP::UnlabeledMultiArg<string> files("FILE(s)", "filenames", false,
                                          "file name(s)", cmd, false);
   cmd.parse(argc, argv);
   bool ignore_case = ignore_case_arg.getValue();
   bool no_pad = no_pad_arg.getValue();
+  bool allow_dups = allow_dups_arg.getValue();
   unsigned field = field_arg.getValue();
   string delim = delim_arg.getValue();
   string pad_char = pad_char_arg.getValue();
+  string separator = separator_arg.getValue();
   vector<string> infiles = files.getValue();
   if(infiles.size() == 0) infiles.push_back("-");
 
@@ -95,13 +104,17 @@ int main(int argc, char * argv[]) {
   CharString seq_;              // CharString more flexible than Dna5String
   string seq;
   SeqFileInWrapper seq_handle;
-  map<string, string> seqs;
-  unsigned long total_bases = 0;
-  unsigned long seq_size = 0;
+  map<string, string> seqs;       // seqs[ID] = joined sequence string
+  std::set<string> seqs_in_file;  // for each file, keep track of IDs seen
+  unsigned long total_bases = 0;  // total length of joined sequences
+  unsigned long seq_size = 0;     // size of the first record in each file
+  unsigned long nfiles = 0;       // number of files processed
+  vector<unsigned long> seq_lengths;
 
   for(string& infile: infiles) {
     
     seq_size = 0;
+    seqs_in_file.clear();
 
     try {
         seq_handle.open(infile);
@@ -129,11 +142,13 @@ int main(int argc, char * argv[]) {
       // Check the size of the first sequence in the file
       if(seq_size == 0) {
         seq_size = length(seq_);
+        seq_lengths.push_back(seq_size);
       }
-      
+
       if(seq_size != length(seq_)) {
         cerr << "Warning " << id << " is not the same size as other seqs"
-             << " in the same file" << endl;
+             << " in the same file " << seq_size << " " <<
+            length(seq_) << endl;
       }
       
       seq = string(toCString(seq_));
@@ -157,16 +172,32 @@ int main(int argc, char * argv[]) {
         join_id = splitted[field-1];
       }
 
+
+      // Check if this ID has been processed yet
+      std::set<string>::iterator its = seqs_in_file.find(join_id);
+      if(its != seqs_in_file.end() && !allow_dups) {
+          cerr << join_id << " found more than once in " << infile << endl;
+          throw("Duplicated ID");
+      }
+      seqs_in_file.insert(join_id);
+
       // Test if id is in map, and add if not
       // Also add enough sequence to fill in missed sequences
       map<string, string>::iterator it = seqs.find(join_id);
       if(it != seqs.end()) {
-        // Found: do nothing
+        // Found: do nothing except add padding
+        if(nfiles > 0) {
+            seqs[join_id] += separator;
+        }
       } else {
         if(total_bases > 0 && !no_pad) {
           seqs[join_id].reserve(total_bases + seq_size * 2);
-          for(unsigned long j = 0; j < total_bases; j++) {
-            seqs[join_id] += pad_char;
+          for(unsigned long si = 0; si < seq_lengths.size()-1; si++) {
+            unsigned long sl = seq_lengths[si];
+            for(unsigned long j = 0; j < sl; j++) {
+              seqs[join_id] += pad_char;
+            }
+            seqs[join_id] += separator;
           }
         } else {
           seqs[join_id] = "";
@@ -180,10 +211,15 @@ int main(int argc, char * argv[]) {
     
     total_bases += seq_size;
     
+    // Add padding to IDs found in previous files but not this one
     if(!no_pad) {
+      unsigned long target_length = total_bases + separator.size() * nfiles;
       for(map<string, string>::iterator it = seqs.begin(); it != seqs.end(); it++) {
-        if(it->second.length() < total_bases) {
-          for(unsigned long j = it->second.length(); j < total_bases; j++) {
+        if(it->second.length() < target_length) {
+          if(nfiles > 0) {
+            it->second += separator;
+          }
+          for(unsigned long j = it->second.length(); j < target_length; j++) {
             it->second += pad_char;
           }
         }
@@ -194,6 +230,8 @@ int main(int argc, char * argv[]) {
         cerr << "Problem closing " << infile << endl;
         return 1;
     }
+
+    nfiles++;
 
   } // End loop over files
   
