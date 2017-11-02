@@ -7,13 +7,15 @@ sequence-record-based. The goal of this software is to create a set of
 tools that perform the same functions as head, tail, grep, sort, etc.,
 but are aware of the structure of sequence files.
 
+All programs are written in C++ and make use of the Seqan library header
+files.
+
 blgrep: Grep for biological sequences
 --------------------------------------
 
-blgrep is a C++ program based on the Seqan library that performs regex
-searches on biological sequences. It is meant to act very much like
-grep, except that it works on sequence records instead of lines in a
-file.
+blgrep performs regex searches on biological sequences. It is meant to
+act very much like grep, except that it works on sequence records
+instead of lines in a file.
 
 blhead and bltail
 -------------------
