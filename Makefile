@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -I. --std=c++14 -Wall -O3
+CXXFLAGS = -I. --std=c++14 -Wall -O3 -fPIC
 DEPS = SeqFileInWrapper.h
 
 %.o: %.c $(DEPS)
@@ -23,4 +23,4 @@ bljoin: bljoin.o SeqFileInWrapper.o
 .PHONY: clean
 
 clean:
-	rm -f *.o blhead
+	rm -f *.o blhead bltail blwc blgrep bljoin
