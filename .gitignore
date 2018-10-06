@@ -3,6 +3,7 @@ blgrep
 blhead
 bltail
 bljoin
+blsort
 *~
 .*
 *.o
