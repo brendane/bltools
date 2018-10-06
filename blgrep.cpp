@@ -101,7 +101,7 @@ int main(int argc, char * argv[]) {
   if(regex_in_file) {
       // Read regex's from file
       ifstream regex_stream(regex_string_arg.getValue());
-      if(!regex_stream.is_open() && regex_stream.good()) {
+      if(!(regex_stream.is_open() && regex_stream.good())) {
         cerr << "Could not open regex file " << regex_string_arg.getValue() <<
             endl;
         return 1;
